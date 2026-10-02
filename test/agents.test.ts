@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildQuerySeed, validateNormalize } from "../src/services/agents.ts";
+import { buildQuerySeed, validateNormalize, wholeDocument } from "../src/services/agents.ts";
 import { DOC_TYPES, SCHEMAS, schemaFor, toAnswerJsonSchema } from "../src/services/schemas.ts";
 import type { ExtractedField } from "../src/types.ts";
 
@@ -71,4 +71,11 @@ test("buildQuerySeed falls back to a generic seed when text is empty", () => {
   const seed = buildQuerySeed("   ", "report.pdf");
   assert.match(seed, /^report\.pdf /);
   assert.ok(seed.length > 12);
+});
+
+test("the whole-document strategy names the file field once the resource has one", () => {
+  // A processed resource carries a key-value field, and ARAG answers 500 to `full_resource`
+  // on it — so a reprocess or a question about a finished record must not use it.
+  assert.deepEqual(wholeDocument("f9ac4d55"), [{ name: "field_extension", fields: ["f/f9ac4d55"] }]);
+  assert.deepEqual(wholeDocument(), [{ name: "full_resource" }]);
 });

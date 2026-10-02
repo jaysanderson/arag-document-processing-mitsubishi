@@ -26,6 +26,7 @@ import type {
   AnswerJsonSchema,
   AragClient,
   Logger,
+  RagStrategy,
   SearchConfiguration,
 } from "../../vendor/arag-platform/src/index.ts";
 import type {
@@ -64,6 +65,21 @@ export interface AgentDeps {
 /** Deterministic ARAG search_configuration name for a schema. */
 export function aragConfigName(schema: ExtractionSchema): string {
   return `dip_${schema.name}`;
+}
+
+/**
+ * The retrieval strategy that puts the whole document in front of the model.
+ *
+ * `full_resource` does that for a fresh resource. But ARAG answers HTTP 500 for it as soon as
+ * the resource carries a key-value field — and every processed document does, because the
+ * pipeline's last stage writes one. So a reprocess, or a question about a finished record,
+ * failed on exactly the documents that had been read successfully. `field_extension` on the
+ * uploaded file's own field supplies the same text without touching the key-value field. It
+ * is passed per request (a request's strategies replace the stored configuration's), since
+ * the field id belongs to the resource, not to the schema.
+ */
+export function wholeDocument(fileField?: string): RagStrategy[] {
+  return fileField ? [{ name: "field_extension", fields: [`f/${fileField}`] }] : [{ name: "full_resource" }];
 }
 
 /** Build the Nuclia search_configuration body (kind:"ask") for a schema. */
@@ -158,6 +174,7 @@ export class Agents {
     resourceId: string,
     querySeed: string,
     signal?: AbortSignal,
+    fileField?: string,
   ): Promise<{ docType: DocType; confidence: number }> {
     const schema: AnswerJsonSchema = {
       name: "classify_document",
@@ -179,7 +196,7 @@ export class Agents {
       {
         query: querySeed,
         resource_filters: [resourceId],
-        rag_strategies: [{ name: "full_resource" }],
+        rag_strategies: wholeDocument(fileField),
         prompt: { system: GROUNDING },
         answer_json_schema: schema,
         temperature: 0,
@@ -206,7 +223,7 @@ export class Agents {
     resourceId: string,
     schema: ExtractionSchema,
     querySeed: string,
-    opts: { sourceText?: string; signal?: AbortSignal } = {},
+    opts: { sourceText?: string; signal?: AbortSignal; fileField?: string } = {},
   ): Promise<{ fields: ExtractedField[]; evidence: Evidence[] }> {
     // Extraction runs through the schema's STORED ARAG search configuration, which
     // owns the model (visual LLM), full_resource RAG strategy, reranker, prompt, and
@@ -217,6 +234,7 @@ export class Agents {
         query: querySeed,
         search_configuration: configName,
         resource_filters: [resourceId],
+        ...(opts.fileField ? { rag_strategies: wholeDocument(opts.fileField) } : {}),
         temperature: 0,
         max_tokens: 1500,
       },
@@ -246,7 +264,12 @@ export class Agents {
 
   // ─── enrichEntities ─────────────────────────────────────────────────────────
 
-  async enrichEntities(resourceId: string, querySeed: string, signal?: AbortSignal): Promise<Entity[]> {
+  async enrichEntities(
+    resourceId: string,
+    querySeed: string,
+    signal?: AbortSignal,
+    fileField?: string,
+  ): Promise<Entity[]> {
     const schema: AnswerJsonSchema = {
       name: "extract_entities",
       description: "Surface the salient named entities in the document.",
@@ -276,7 +299,7 @@ export class Agents {
       {
         query: querySeed,
         resource_filters: [resourceId],
-        rag_strategies: [{ name: "full_resource" }],
+        rag_strategies: wholeDocument(fileField),
         prompt: { system: GROUNDING },
         answer_json_schema: schema,
         temperature: 0,
@@ -299,6 +322,7 @@ export class Agents {
     resourceId: string,
     querySeed: string,
     signal?: AbortSignal,
+    fileField?: string,
   ): Promise<{ summary: string; tags: string[] }> {
     const schema: AnswerJsonSchema = {
       name: "summarize_document",
@@ -316,7 +340,7 @@ export class Agents {
       {
         query: querySeed,
         resource_filters: [resourceId],
-        rag_strategies: [{ name: "full_resource" }],
+        rag_strategies: wholeDocument(fileField),
         prompt: { system: GROUNDING },
         answer_json_schema: schema,
         temperature: 0,

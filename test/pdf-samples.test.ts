@@ -87,6 +87,24 @@ test("a PDF sample is read from its own text layer under the mock", async () => 
   assert.doesNotMatch(named.text, /COBALT MANUFACTURING/);
 });
 
+test("every pipeline question reads the document through its own file field", async () => {
+  await runSample("me-po-050031");
+  const asks = product.mock!.mock.calls.filter(
+    (call) => call.method === "POST" && call.path.endsWith("/ask"),
+  );
+  assert.ok(asks.length >= 4, "classify, extract, entities and summary all ask");
+  for (const call of asks) {
+    const strategies = (call.body as { rag_strategies?: Array<{ name: string; fields?: string[] }> })
+      .rag_strategies;
+    assert.equal(
+      strategies?.[0]?.name,
+      "field_extension",
+      "never full_resource: it fails once key-values are written",
+    );
+    assert.match(strategies?.[0]?.fields?.[0] ?? "", /^f\/.+/);
+  }
+});
+
 test("a scanned sample has no text layer, so the mock says it cannot read it", async () => {
   const out = await runSample("me-order-43699");
   assert.equal(out.filename, "20261001_085058.pdf");

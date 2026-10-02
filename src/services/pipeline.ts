@@ -328,6 +328,9 @@ export async function runPipeline(
     }
   }
 
+  // Every agent call below names the uploaded file's own field (see `wholeDocument`).
+  const fileField = record.meta.fileField;
+
   // 2b. Choose the extraction config. If one was forced, skip auto-classification and
   //     use it directly; otherwise an agent classifies the document.
   let schema: ExtractionSchema = schemaFor(record.docType);
@@ -351,7 +354,7 @@ export async function runPipeline(
     const cls = await stage(
       "classify",
       "Classifying document type…",
-      () => deps.agents.classify(resourceId, seed, ctx.signal),
+      () => deps.agents.classify(resourceId, seed, ctx.signal, fileField),
       { soft: true, progress: 0.35 },
     );
     if (cls) {
@@ -376,7 +379,7 @@ export async function runPipeline(
       "extract",
       `Extracting ${schema.docType.replace(/_/g, " ")} fields with the visual LLM…`,
       async () => {
-        const opts = { sourceText, signal: ctx.signal };
+        const opts = { sourceText, signal: ctx.signal, fileField };
         let out = await deps.agents.extractFields(resourceId, schema, seed, opts);
         if (out.fields.length === 0) {
           await sleep(2500, ctx.signal);
@@ -397,10 +400,10 @@ export async function runPipeline(
     "entities",
     "Surfacing named entities…",
     async () => {
-      let e = await deps.agents.enrichEntities(resourceId, seed, ctx.signal);
+      let e = await deps.agents.enrichEntities(resourceId, seed, ctx.signal, fileField);
       if (e.length === 0) {
         await sleep(1200, ctx.signal);
-        e = await deps.agents.enrichEntities(resourceId, seed, ctx.signal);
+        e = await deps.agents.enrichEntities(resourceId, seed, ctx.signal, fileField);
       }
       return e;
     },
@@ -411,7 +414,7 @@ export async function runPipeline(
   const summ = await stage(
     "summary",
     "Summarising and tagging…",
-    () => deps.agents.summarize(resourceId, seed, ctx.signal),
+    () => deps.agents.summarize(resourceId, seed, ctx.signal, fileField),
     { soft: true, progress: 0.85 },
   );
   if (summ) {

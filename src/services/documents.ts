@@ -21,7 +21,7 @@ import {
 } from "../../vendor/arag-platform/src/index.ts";
 import type { DocumentRecord } from "../types.ts";
 import type { Agents } from "./agents.ts";
-import { paragraphsFromRetrieval } from "./agents.ts";
+import { paragraphsFromRetrieval, wholeDocument } from "./agents.ts";
 import type { ConfigsService } from "./configs.ts";
 import { EXTENSION, type Format, MIME, serialize, serializeMany } from "./formats.ts";
 import {
@@ -758,9 +758,10 @@ export class DocumentsService {
         query: question,
         citations: true,
         // `/ask` + resource_filters, never `/resource/{id}/ask`: the per-resource endpoint
-        // rejects `full_resource` upstream (HTTP 500/503). See services/agents.ts.
+        // rejects `full_resource` upstream (HTTP 500/503). See services/agents.ts — and
+        // `wholeDocument` there for why a finished record names its own file field.
         resource_filters: [rec.resourceId],
-        rag_strategies: [{ name: "full_resource" }],
+        rag_strategies: wholeDocument(rec.meta.fileField),
         prompt: {
           system:
             "Answer using only the provided document content. If the answer is not in the document, say you don't have that information.",
