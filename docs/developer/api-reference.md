@@ -1513,8 +1513,9 @@ A bundled sample document the first-run flow can process in one click.
 | `filename` | string | yes |  |
 | `contentType` | string | yes |  |
 | `url` | string | yes | Static path to fetch the sample's bytes from |
-| `kind` | string (`text`, `image`) |  |  |
+| `kind` | string (`text`, `image`, `pdf`) |  |  |
 | `expectedDocType` | string (`invoice`, `receipt`, `contract`, `resume`, `purchase_order`, `medical_claim`, `preauthorisation`, `bank_statement`, `form`, `report`, `generic`) |  |  |
+| `featured` | boolean |  | Shown up front on the welcome screen rather than under “Other samples” |
 
 ### SampleRequest
 

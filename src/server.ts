@@ -47,6 +47,7 @@ import { DocumentsService } from "./services/documents.ts";
 import { GeneratorsService } from "./services/generators.ts";
 import { KvService, KvValidationError } from "./services/kv.ts";
 import { mockEvidenceHook } from "./services/mock-evidence.ts";
+import { fixMockPdfText, registerMockSampleTexts } from "./services/mock-samples.ts";
 import { makeKvWriteback } from "./services/pipeline.ts";
 import { ReviewService } from "./services/review.ts";
 import { schemaFor } from "./services/schemas.ts";
@@ -111,6 +112,27 @@ export interface CreateOptions {
 
 const HERE = resolve(import.meta.dirname ?? ".", "..");
 
+/**
+ * Make an upload's extract strategy actually reach the Knowledge Box.
+ *
+ * The vendored client sends it as `?extract_strategy=`, which the upload endpoints accept
+ * and ignore: the file field comes back with `extract_strategy: ""` and the page is read
+ * from whatever text layer the file happens to carry — for a scan, the scanner's own OCR.
+ * The API takes the strategy from the `x-extract-strategy` header. The query parameter is
+ * left in place because the mock records the strategy from it. Vendored files are never
+ * edited, so the request is corrected here, on its way out.
+ */
+export function sendExtractStrategyHeader(client: AragClient): AragClient {
+  const request = client.request.bind(client);
+  client.request = (method, path, init = {}) => {
+    const query = path.includes("?") ? path.slice(path.indexOf("?") + 1) : "";
+    const strategy = method === "POST" ? new URLSearchParams(query).get("extract_strategy") : null;
+    if (!strategy) return request(method, path, init);
+    return request(method, path, { ...init, headers: { ...init.headers, "x-extract-strategy": strategy } });
+  };
+  return client;
+}
+
 export async function createProduct(env: PlatformEnv, opts: CreateOptions = {}): Promise<Product> {
   const log = opts.log ?? defaultLog;
   const usage: Usage = {
@@ -132,6 +154,11 @@ export async function createProduct(env: PlatformEnv, opts: CreateOptions = {}):
     // fixture text it extracted from, so the demo and the tests exercise real verification
     // instead of a grounding score of zero. Vendored files are never edited.
     mock = await startMockArag({ log, answerHook: mockEvidenceHook, ...opts.mock });
+    // Nor can it read a PDF: the bundled PDF samples register their own text layer, so the
+    // mock answers with the document that was submitted rather than an unrelated fixture —
+    // and never with the PDF's raw bytes.
+    registerMockSampleTexts(resolve(HERE, "public"));
+    fixMockPdfText(mock.mock);
     // The mock owns the connection while it is running: its ids are the baseline an operator
     // edits from, and the deployment's real credentials are not the default here.
     baselineOverrides["connection.kbId"] = mock.kbId;
@@ -192,7 +219,7 @@ export async function createProduct(env: PlatformEnv, opts: CreateOptions = {}):
       },
     });
   };
-  let live = buildArag();
+  let live = sendExtractStrategyHeader(buildArag());
   const arag = new Proxy({} as AragClient, {
     get(_t, prop) {
       const value = Reflect.get(live as object, prop) as unknown;
@@ -445,7 +472,7 @@ export async function createProduct(env: PlatformEnv, opts: CreateOptions = {}):
   settings.onChange((changed) => {
     if (changed.some((k) => k.startsWith("connection."))) {
       try {
-        live = buildArag();
+        live = sendExtractStrategyHeader(buildArag());
         aragError = null;
       } catch (err) {
         // Keep serving with the previous client and say so, rather than 500ing the save.

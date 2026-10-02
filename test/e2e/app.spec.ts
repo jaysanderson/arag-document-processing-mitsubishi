@@ -38,12 +38,33 @@ test("the guided sample processes a document and lands in the queue", async ({ p
   await expect(page.locator(".arag-tour-card")).toHaveCount(0);
 
   await expect(page.locator("#docsTable tbody tr")).not.toHaveCount(0, { timeout: 30_000 });
-  const row = page.locator("#docsTable tbody tr").first();
-  await expect(row).toContainText("invoice.txt");
-  await expect(row.locator(".arag-chip")).toContainText("Ready", { timeout: 60_000 });
+  // The guided sample is a purchase order as it arrived: a PDF, under its own filename.
+  const row = page.locator("#docsTable tbody tr", { hasText: "Purchase_Order_No_1706.pdf" }).first();
+  await expect(row.locator(".arag-chip").first()).toContainText("Ready", { timeout: 60_000 });
+  await expect(row).toContainText("Purchase order");
+  await expect(page.locator("#strip .arag-statstrip > *").first()).toContainText("Documents");
+});
+
+test("the other orders sit beside the guided sample, and the generic samples one click away", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.goto("/#/welcome");
+  // Five more orders up front (the sixth is the guided sample itself)…
+  await expect(page.locator("#featuredSamples [data-sample]")).toHaveCount(5);
+  await expect(page.locator('#featuredSamples [data-sample="me-order-43699"]')).toHaveText(
+    "Handwritten order 43699",
+  );
+  // …and the samples that ship with the product, folded away.
+  await page.click("details summary");
+  await page.click('details [data-sample="invoice"]');
+  await expect(page).toHaveURL(/#\/documents/, { timeout: 20_000 });
+  await page.click(".arag-tour-card [data-skip]");
+
+  const row = page.locator("#docsTable tbody tr", { hasText: "invoice.txt" }).first();
+  await expect(row.locator(".arag-chip").first()).toContainText("Ready", { timeout: 60_000 });
   // The row carries the document's own identity, not just the filename it arrived under.
   await expect(row.locator(".cell-sub")).toContainText("INV-2026-0042");
-  await expect(page.locator("#strip .arag-statstrip > *").first()).toContainText("Documents");
 });
 
 test("the record shows verified evidence, and the source tab locates every quote", async ({ page }) => {

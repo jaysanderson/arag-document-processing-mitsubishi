@@ -1,0 +1,31 @@
+                                                                                            AW25183DT
+Purchase Order
+                                                                                               01/10/2026
+
+Supplier:                                                      Ship to:
+MITSUBISHI ELECTRIC (112784 )
+PO BOX 7232,
+SILVERWATER, VIC, 2128
+P | 1300 651 808
+E | nsworders@meaust.meap.com
+
+Description                                            Qty                EA            GST                   Net
+MSZ-GS25VFD2-A1                                           1
+
+MUZ-GS25VFD2-A1                                           1
+
+Job No:              PW103289                                 Total Price
+Company:
+                                                              Shipping                                       $0.00
+Site Details:
+                                                              GST                                       $
+
+Authorised By:                                                Total Inc                                $
+
+IMPORTANT NOTICES.
+Invoices received without p/order and job no clearly quoted will be returned and not paid until invoice is
+corrected. Only one p/order no can be used per invoice.
+
+NOTE: Any invoice not received within 21 days of works being completed will not be paid, so please advise
+your accounts staff to raise invoices in a timely manner. All invoices raised in connection with this Purchase
+Order must be made out to Chill-Rite Refrigeration and Air Conditioning or they will be returned for correction.

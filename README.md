@@ -12,6 +12,14 @@ language.
 Built on the [shared ARAG platform](../arag-platform). API-first, zero runtime
 dependencies, Apache-2.0.
 
+> **This checkout is set up for Mitsubishi Electric.** Branding (name, three-diamond mark,
+> red) comes from the `BRAND_*` values in `.env.example` and `fly.toml`, with the mark in
+> `public/brand/`. Six purchase orders are bundled as PDF samples in `public/samples/pdf/`
+> (catalogue: `src/services/samples.ts`) and lead the welcome screen. `.env` points at the
+> `mitsubishi-electric-orders` Knowledge Box in `aws-ap-southeast-2-1` and at its
+> `orders-visual-llm-v2` extract strategy, which is what reads the handwritten order.
+> The sample PDFs are customer documents: keep them out of the public repository.
+
 ```bash
 make install        # bun installs dev tooling only (no npm, ever)
 make dev            # http://localhost:8080 — uses the mock ARAG unless .env has credentials

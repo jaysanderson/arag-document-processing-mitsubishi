@@ -7,8 +7,8 @@
  * test/e2e/admin.spec.ts — nothing here is a new, unverified selector.
  *
  * The click path follows design/PRODUCT-EXPERIENCE.md §6.3, with one deliberate change: the
- * guided sample (`#startSample`) posts the clean, built-in `invoice.txt` sample, which has
- * nothing for the validation surfaces to show. So the tour is still run for its own sake —
+ * guided sample (`#startSample`) posts a clean bundled sample (purchase order No. 1706), which
+ * has nothing for the validation surfaces to show. So the tour is still run for its own sake —
  * it is a real, on-screen product feature worth recording — but the record the walkthrough
  * actually inspects is `showcase/fixtures/invoice-review.txt`, uploaded afterwards through
  * the upload drawer. That fixture's subtotal and tax deliberately do not reconcile with the

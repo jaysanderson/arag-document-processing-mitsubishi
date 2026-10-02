@@ -1,13 +1,15 @@
-# Fly.io deployment for Document Processing (existing app: arag-doc-processing).
+# Fly.io deployment for Document Processing.
 # Secrets are set out of band and never live in this file:
-#   fly secrets set ARAG_KB_ID=… ARAG_API_KEY=… ARAG_REGION=aws-us-east-2-1 \
+#   fly secrets set ARAG_KB_ID=… ARAG_API_KEY=… \
 #                   ADMIN_TOKEN=… DIP_EXTRACT_STRATEGY=… API_KEYS=…
 #
 # API_KEYS is optional but strongly recommended for any deployment that is reachable from
 # the internet: without it the public API is open (rate-limited) for reads and uploads.
 # Destructive verbs always require a credential — see docs/architecture/security-model.md.
-app = "arag-doc-processing"
-primary_region = "iad"   # co-located with the ARAG zone aws-us-east-2-1
+# This checkout is the Mitsubishi Electric setup, so it deploys to an app of its own rather
+# than over the shared `arag-doc-processing` one. Create it first: fly apps create <name>.
+app = "arag-doc-processing-mitsubishi"
+primary_region = "syd"   # co-located with the ARAG zone aws-ap-southeast-2-1
 
 [build]
   dockerfile = "Dockerfile"
@@ -20,8 +22,11 @@ primary_region = "iad"   # co-located with the ARAG zone aws-us-east-2-1
   RATE_LIMIT_RPS = "5"
   RATE_LIMIT_BURST = "20"
   MAX_BODY_BYTES = "26214400"
-  ARAG_REGION = "aws-us-east-2-1"
-  ARAG_GENERATIVE_MODEL = "chatgpt-azure-4o"
+  ARAG_REGION = "aws-ap-southeast-2-1"
+  BRAND_PRODUCT_NAME = "Mitsubishi Electric"
+  BRAND_TAGLINE = "Orders in, validated records out"
+  BRAND_LOGO_URL = "/brand/mitsubishi-electric.svg"
+  BRAND_PRIMARY_COLOR = "rgb(230,0,18)"
 
 # Persistent volume for the JSON stores (documents, jobs, extraction configs).
 [[mounts]]

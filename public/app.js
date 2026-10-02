@@ -120,7 +120,7 @@ const TOUR = [
   {
     target: "#docsTable",
     title: "Rows carry the document's own identity",
-    body: "Each row carries the document's own identity — the invoice number and the supplier — not just the filename a scanner gave it. Open the row when it says Ready.",
+    body: "Each row carries the document's own identity — the order number and the supplier — not just the filename a scanner gave it. Open the row when it says Ready.",
   },
   {
     target: '[data-nav="Configs"]',

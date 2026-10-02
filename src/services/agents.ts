@@ -39,9 +39,14 @@ import type {
 import { normalizeCurrency, parseAmount, parseDateISO } from "./normalize.ts";
 import { DOC_TYPES, type ExtractionSchema, SCHEMAS, toAnswerJsonSchema } from "./schemas.ts";
 
+// The last sentence keeps the model in step with `parseDateISO`, which reads an ambiguous
+// numeric date day-first. A date field asks for ISO 8601, so without it the model converts
+// "01/10/2026" itself — month-first as often as not — and the normaliser never sees the
+// original to get it right. These are Australian orders: 01/10/2026 is 1 October.
 export const GROUNDING =
   "You are a precise document-data extraction engine. Use ONLY the content of the provided document. " +
-  "Do not invent values. If a field is not present, omit it or leave it empty. Return values exactly as written in the document unless asked to normalize.";
+  "Do not invent values. If a field is not present, omit it or leave it empty. Return values exactly as written in the document unless asked to normalize. " +
+  "A date written in numbers is day/month/year: 01/10/2026 is 1 October 2026.";
 
 export interface AgentDeps {
   arag: AragClient;

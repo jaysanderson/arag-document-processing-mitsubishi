@@ -1,0 +1,46 @@
+ Date: 29/9/2026                                 Purchase Order No: 050031              Received Date: 6/10/2026
+
+         Oganisation:
+         Mitsubishi Electric Australia Pty Ltd
+         9-11, Distribution Drive
+         Orchard Hills NSW 2748
+                                                                              PURCHASE ORDER
+         Phone: 1800 811 212
+                                                                                 No. 050031
+         Supplier Location: , Orchard Hills , NSW, 2748
+
+ Delivery Into                                                     Purchase Status                    Payment Type
+ Delivery Address:                                                 In Progress                        30 Day EOM Account
+
+ Delivery Date: 6/10/2026
+ Delivery Time: 12:00PM
+
+ Deliver Instructions
+
+ Site Contact:              - Inst L2
+
+                                                                              Job
+ Qty     Part No        Check                                                          Unit Cost        Total     Received   Return
+                                                                             Number
+          MSZ-
+  2    AP35VGKD2- MSZ-AP35VGKD2-A2                                           111986
+           A2
+          MSZ-
+  1    AP50VGKD2- MSZ-AP50VGKD2-A2                                           111986
+           A2
+          MXZ-
+  1               MXZ-4F80VGD-A2                                             111986
+       4F80VGD-A2
+                                                                                           Subtotal
+                                                                                           (+) GST
+                                                                                              Total
+
+ Linked Job Number:                                                               Customer name:
+
+ Purchase Notes
+ Price as agreement
+
+PO Created by:
+
+Approval by
+Il

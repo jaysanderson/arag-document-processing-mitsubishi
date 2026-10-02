@@ -16,8 +16,10 @@ export interface Sample {
   contentType: string;
   /** Static path the client fetches the bytes from before uploading them. */
   url: string;
-  kind: "text" | "image";
+  kind: "text" | "image" | "pdf";
   expectedDocType: DocType;
+  /** Shown up front on the welcome screen rather than under “Other samples”. */
+  featured?: boolean;
 }
 
 const text = (
@@ -54,7 +56,79 @@ const image = (
   expectedDocType,
 });
 
+/**
+ * A PDF sample. `filename` is the name the document arrived under — it is what the queue
+ * shows — while the file on disk has a URL-safe name of its own.
+ */
+const pdf = (
+  id: string,
+  title: string,
+  description: string,
+  expectedDocType: DocType,
+  file: string,
+  filename: string,
+): Sample => ({
+  id,
+  title,
+  description,
+  filename,
+  contentType: "application/pdf",
+  url: `/samples/pdf/${file}`,
+  kind: "pdf",
+  expectedDocType,
+  featured: true,
+});
+
 export const SAMPLES: readonly Sample[] = [
+  // Orders as Mitsubishi Electric Australia receives them: six layouts, one canonical record.
+  pdf(
+    "me-po-1706",
+    "Purchase order No. 1706",
+    "Twelve lines of split systems, ducted kits and zone controllers ordered against quotation 2732308, with ordered and required dates.",
+    "purchase_order",
+    "po-1706.pdf",
+    "Purchase_Order_No_1706.pdf",
+  ),
+  pdf(
+    "me-po-050031",
+    "Purchase order 050031",
+    "A job-management system's order: three split-system part numbers against job 111986, with a delivery date and time.",
+    "purchase_order",
+    "hvac-po-050031.pdf",
+    "hvac Purchase Order 050031.pdf",
+  ),
+  pdf(
+    "me-po-aw25183dt",
+    "Purchase order AW25183DT",
+    "A contractor's order for an MSZ/MUZ-GS25 pair against job PW103289, with no prices filled in.",
+    "purchase_order",
+    "po-aw25183dt.pdf",
+    "PO_AW25183DT.pdf",
+  ),
+  pdf(
+    "me-order-43699",
+    "Handwritten order 43699",
+    "A scanned page from an order book: a handwritten model number, delivery day and pricing note. The hard case for the visual path.",
+    "purchase_order",
+    "order-43699-scan.pdf",
+    "20261001_085058.pdf",
+  ),
+  pdf(
+    "me-example-po",
+    "Letter-style order form",
+    "A one-page letter that orders by quote number (Quote 2732413) instead of listing models, with the contact details removed.",
+    "purchase_order",
+    "example-po.pdf",
+    "Example PO.pdf",
+  ),
+  pdf(
+    "me-order-form",
+    "HVAC order form (blank)",
+    "Mitsubishi Electric Australia's own order form, not filled in — what the pipeline reports when the page has labels and no values.",
+    "form",
+    "hvac-order-form-v2.pdf",
+    "HVAC Order Form v2.pdf",
+  ),
   text(
     "invoice",
     "Supplier invoice",

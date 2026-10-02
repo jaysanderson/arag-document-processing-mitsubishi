@@ -2,15 +2,15 @@
  * Welcome — first run. Turn an empty deployment into a processed document in one click,
  * and be honest about which Knowledge Box it is talking to.
  *
- * The headline and subheadline are the customer promise from
- * `marketing/site/document-processing.json`: the product must say on screen what the site
- * says about it. The mock notice is not dismissible — fixture output is never presented
- * as extraction.
+ * The headline is the customer promise from `marketing/site/document-processing.json`: the
+ * product must say on screen what the site says about it. The subheadline and the samples
+ * are this deployment's own — orders as Mitsubishi Electric receives them. The mock notice
+ * is not dismissible — fixture output is never presented as extraction.
  */
 import { $, $$, api, buildHash, errorState, esc, icon, navigate, toast } from "../lib/core.js";
 import { listSamples, startSample } from "./upload.js";
 
-const GUIDED_SAMPLE = "invoice";
+const GUIDED_SAMPLE = "me-po-1706";
 
 export async function renderWelcome(main, { stale }) {
   const [ready, configs, samples] = await Promise.all([
@@ -20,14 +20,20 @@ export async function renderWelcome(main, { stale }) {
   ]);
   if (stale()) return;
   const mock = ready?.arag?.mock === true;
+  // The catalogue marks the samples that belong up front; the rest stay one click away.
+  const featured = samples.filter((s) => s.featured && s.id !== GUIDED_SAMPLE);
+  const others = samples.filter((s) => !s.featured);
+  const sampleButton = (s) =>
+    `<button class="arag-btn ghost sm" type="button" data-sample="${esc(s.id)}" title="${esc(s.description)}">${esc(s.title)}</button>`;
 
   main.innerHTML = `
     <div class="arag-prose" style="max-width:760px">
       <h1>Read every document the first time</h1>
       <p class="muted" style="font-size:1rem">
-        Paperwork arrives as pictures of data — invoices, claim forms, statements, permits,
-        delivery notes, applications. This turns them into checked, structured records your
-        systems can use, and shows you exactly where every value came from.
+        Orders arrive as pictures of data — your own order form, a contractor's purchase
+        order, a letter quoting a quote number, a handwritten page from an order book. This
+        turns them into checked, structured records your systems can use, and shows you
+        exactly where every value came from.
       </p>
     </div>
 
@@ -35,17 +41,20 @@ export async function renderWelcome(main, { stale }) {
       <div class="arag-card">
         <div class="head"><h2>Try it with a sample</h2></div>
         <div class="body arag-stack">
-          <p class="muted">A supplier invoice whose totals do not reconcile — so you can see the validation catch something, and the evidence behind every value it did read.</p>
+          <p class="muted">Purchase order No. 1706: twelve lines of split systems, ducted kits and zone controllers ordered against a quotation — so you can see every part number and quantity read off the page, and the evidence behind each value.</p>
           <div><button class="arag-btn lg" type="button" id="startSample">${icon("play")} Start the guided sample</button></div>
+          ${
+            featured.length
+              ? `<div>
+                   <p class="muted small" style="margin:0 0 8px">More orders, each in a different layout</p>
+                   <div class="arag-chips" id="featuredSamples">${featured.map(sampleButton).join("")}</div>
+                 </div>`
+              : ""
+          }
           <details>
             <summary class="muted small">Other samples</summary>
             <div class="arag-chips" style="margin-top:8px">
-              ${samples
-                .map(
-                  (s) =>
-                    `<button class="arag-btn ghost sm" type="button" data-sample="${esc(s.id)}" title="${esc(s.description)}">${esc(s.title)}</button>`,
-                )
-                .join("")}
+              ${others.map(sampleButton).join("")}
             </div>
           </details>
         </div>

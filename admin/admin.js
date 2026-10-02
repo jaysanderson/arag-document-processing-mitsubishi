@@ -51,9 +51,12 @@ const root = document.getElementById("app");
 let main = null;
 let setActiveNav = () => {};
 
-api("/api/v1/branding")
+// `boot()` waits for this: the sign-in card is drawn from it, and drawn first it would show
+// the platform's mark, name and colour at the door of a partner's deployment.
+const brandingReady = api("/api/v1/branding")
   .then((b) => {
     window.__branding = b;
+    applyBranding(b);
   })
   .catch(() => undefined);
 
@@ -922,6 +925,7 @@ async function mountSettings(host, groupId, rerender) {
 let router = null;
 
 async function boot() {
+  await brandingReady;
   try {
     await api("/api/v1/admin/health");
   } catch (err) {

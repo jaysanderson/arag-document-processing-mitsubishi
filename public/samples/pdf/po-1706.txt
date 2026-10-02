@@ -1,0 +1,26 @@
+                                                                                                          PURCHASE ORDER NO. 1706
+                                   Supplier:                  MITSUBISHI ELECTRIC           Date Ordered:        30/09/2026
+                                                              PTY LTD                       Date Required:       12/10/2026
+                                   Branch Address:            15 Tench Street               Reference:           y
+                                                              Kingston ACT 2604
+                                   Account:                   112941
+                                                                                            Ordered By:
+                                     As per quotation 2732308.
+                                             Part #                                               Item                        Quantity
+                                   MSZAP71VGKIT                  7.1kW Wall Mount Split System With Wi-Fi                             1
+                                   MSZAP25VGKIT                  2.5kW Wall Mount Split System With Wi-Fi                             2
+                                   MSZAP60VGKIT                  6kW Wall Mount Split System With Wi-Fi                               1
+                                   MSZAP80VGKIT                  8kW Wall Mount Split System With Wi-Fi                               1
+                                   PEAM140HAAVKIT2               PEAM140HAAVKIT2                                                      1
+                                   MAC-588IF-E                   Wi-Fi Adapter                                                        1
+                                   PEAM160HAAVKIT                PEAM160HAAVKIT                                                       2
+                                   PEAM250YKIT                   PEAM250YKIT                                                          1
+                                   PACZC04ONOFFWLKIT             4 Zone ON/OFF MainRC WRLSS 2x sens WiFi                              1
+                                   PACZC10ONOFFWLKIT             10 Zone ON/OFF MainRC WRLSS 4x sens WiFi                             1
+                                   PACZC10LINEARWLKIT            10 Zone LINEAR MainRC WRLSS 4x sens WiFi                             1
+                                   PAR-ZR01S-A                   Wireless Sensor *Requires wireless receiver                          4
+
+                                   Delivery Address and Special Instructions
+
+Powered by TCPDF (www.tcpdf.org)
+                                                                                 Page 1/1

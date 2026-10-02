@@ -54,7 +54,7 @@ test("an answer carries numbered citations, each naming its own document", async
   await expect(answer).not.toContainText("Searching", { timeout: 60_000 });
   await expect(answer.locator(".arag-cite").first()).toHaveText("[1]");
   // The Sources block is per document, which is the whole difference from the per-record ask.
-  await expect(answer.locator(".dip-sources .doc").first()).toContainText(".txt");
+  await expect(answer.locator(".dip-sources .doc").first()).toContainText(/\.(txt|pdf)/);
   await expect(answer.locator(".dip-sources .open").first()).toHaveAttribute(
     "href",
     /#\/documents\/[0-9a-f]+\/source/,
@@ -65,7 +65,8 @@ test("an answer carries numbered citations, each naming its own document", async
   // must not cost it.
   await answer.locator(".arag-cite").first().click();
   await expect(page.locator(".arag-drawer")).toBeVisible();
-  await expect(page.locator(".arag-drawer .dip-source__text")).toContainText("INVOICE", {
+  // Whichever document the answer cited first — the workspace holds invoices and an order.
+  await expect(page.locator(".arag-drawer .dip-source__text")).toContainText(/INVOICE|PURCHASE ORDER/, {
     timeout: 20_000,
   });
   await page.keyboard.press("Escape");

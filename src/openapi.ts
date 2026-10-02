@@ -595,8 +595,12 @@ const Sample = {
     filename: { type: "string" },
     contentType: { type: "string" },
     url: { type: "string", description: "Static path to fetch the sample's bytes from" },
-    kind: { type: "string", enum: ["text", "image"] },
+    kind: { type: "string", enum: ["text", "image", "pdf"] },
     expectedDocType: { type: "string", enum: [...DOC_TYPES] },
+    featured: {
+      type: "boolean",
+      description: "Shown up front on the welcome screen rather than under “Other samples”",
+    },
   },
 };
 
