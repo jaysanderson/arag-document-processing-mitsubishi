@@ -32,8 +32,8 @@ export async function renderWelcome(main, { stale }) {
       <p class="muted" style="font-size:1rem">
         Orders arrive as pictures of data — your own order form, a contractor's purchase
         order, a letter quoting a quote number, a handwritten page from an order book. This
-        turns them into checked, structured records your systems can use, and shows you
-        exactly where every value came from.
+        turns them into checked, structured records, shows you exactly where every value came
+        from, and hands each order on as an SAP sales-order request.
       </p>
     </div>
 

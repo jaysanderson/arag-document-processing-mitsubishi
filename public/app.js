@@ -88,6 +88,7 @@ const router = createRouter(
     ["/documents/:id/source", withNav("documents", (m, c) => renderDocument(m, c, "source"))],
     ["/documents/:id/pipeline", withNav("documents", (m, c) => renderDocument(m, c, "pipeline"))],
     ["/documents/:id/ask", withNav("documents", (m, c) => renderDocument(m, c, "ask"))],
+    ["/documents/:id/sap", withNav("documents", (m, c) => renderDocument(m, c, "sap"))],
     ["/documents/:id/json", withNav("documents", (m, c) => renderDocument(m, c, "json"))],
     ["/documents/:id/compare", withNav("documents", (m, c) => renderDocument(m, c, "compare"))],
     ["/configs", withNav("configs", renderConfigs)],

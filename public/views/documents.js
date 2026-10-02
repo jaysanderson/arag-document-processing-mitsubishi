@@ -606,6 +606,11 @@ function rowMenu(doc, main, query) {
       { label: "Export XML", onSelect: () => exportOne(doc, "xml") },
       { label: "Export CSV", onSelect: () => exportOne(doc, "csv") },
       {
+        label: "Export for SAP Sales Cloud",
+        hidden: doc.docType !== "purchase_order" || doc.status !== "ready",
+        onSelect: () => exportOne(doc, "sap-c4c"),
+      },
+      {
         label: "Reprocess",
         hidden: state !== "failed" && state !== "degraded",
         onSelect: () => reprocess(doc, main, query),
@@ -621,7 +626,8 @@ export async function exportOne(doc, format) {
     credentials: "same-origin",
   });
   if (!res.ok) return toast(`Export failed (${res.status})`, "error");
-  toast(`Downloaded ${await downloadResponse(res, `${doc.filename}.${format}`)}`);
+  const ext = format.startsWith("sap-") ? `${format}.json` : format;
+  toast(`Downloaded ${await downloadResponse(res, `${doc.filename}.${ext}`)}`);
 }
 
 export async function reprocess(doc, main, query) {

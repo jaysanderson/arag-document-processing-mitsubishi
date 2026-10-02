@@ -411,7 +411,7 @@ const BulkExportRequest = {
   required: ["ids"],
   properties: {
     ids: BulkIds,
-    format: { type: "string", enum: ["json", "xml", "csv"], default: "json" },
+    format: { type: "string", enum: ["json", "xml", "csv", "sap-c4c", "sap-s4"], default: "json" },
   },
   additionalProperties: false,
 };
@@ -581,6 +581,84 @@ const SecurityPosture = {
     headers: { type: "object", additionalProperties: { type: "boolean" } },
     writesRequireCredential: { type: "boolean" },
     retention: { type: "object", properties: { defaultOlderThanDays: { type: "integer" } } },
+  },
+};
+
+const SapOrderLine = {
+  type: "object",
+  description: "One order line, split out of the extracted line item.",
+  required: ["line", "asWritten"],
+  properties: {
+    line: { type: "integer" },
+    productId: { type: ["string", "null"], description: "Part or model number as printed" },
+    quantity: { type: ["number", "null"] },
+    description: { type: ["string", "null"] },
+    unitPrice: { type: ["string", "null"] },
+    asWritten: { type: "string", description: "The line item as extracted, before it was split" },
+  },
+};
+
+const SapExport = {
+  type: "object",
+  description:
+    "A purchase-order record as an SAP sales-order request body, with what stands between it and " +
+    "being posted. The product builds this; it never calls SAP.",
+  required: [
+    "target",
+    "ready",
+    "blockers",
+    "warnings",
+    "payload",
+    "mapping",
+    "notInPayload",
+    "lines",
+    "source",
+  ],
+  properties: {
+    target: {
+      type: "object",
+      required: ["id", "system", "method", "path"],
+      properties: {
+        id: { type: "string", enum: ["sap-c4c", "sap-s4"] },
+        system: { type: "string" },
+        method: { type: "string", enum: ["POST"] },
+        path: { type: "string", description: "Path of the SAP OData collection the payload is for" },
+      },
+    },
+    ready: { type: "boolean", description: "True when no blocker stands in the way of posting" },
+    blockers: { type: "array", items: { type: "string" } },
+    warnings: { type: "array", items: { type: "string" } },
+    payload: { type: "object", description: "The request body for the target API" },
+    mapping: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["sapField", "from", "value"],
+        properties: {
+          sapField: { type: "string" },
+          from: { type: "string", description: "Record field the value was read from" },
+          value: { type: "string" },
+          verified: { type: "string", enum: ["exact", "normalised", "unverified"] },
+        },
+      },
+    },
+    notInPayload: {
+      type: "object",
+      description: "Values read from the order that this payload does not carry",
+      additionalProperties: { type: "string" },
+    },
+    lines: { type: "array", items: SapOrderLine },
+    source: {
+      type: "object",
+      required: ["documentId", "filename", "docType", "processedAt"],
+      properties: {
+        documentId: { type: "string" },
+        filename: { type: "string" },
+        docType: { type: "string" },
+        groundingScore: { type: "number" },
+        processedAt: { type: "string" },
+      },
+    },
   },
 };
 
@@ -1470,6 +1548,7 @@ export const openapi = buildOpenApi({
     Stats,
     Settings,
     Sample,
+    SapExport,
     SampleRequest,
     DocumentText,
     Facets,
@@ -1720,22 +1799,33 @@ export const openapi = buildOpenApi({
       get: {
         operationId: "exportDocument",
         tags: ["documents"],
-        summary: "Download the record as JSON, XML or CSV",
+        summary: "Download the record as JSON, XML or CSV, or as an SAP sales-order request body",
         description:
           "Serialises the same record `GET /documents/{id}` returns into the requested format and " +
-          "sends it as an attachment. CSV flattens the extracted fields to one row per field.",
+          "sends it as an attachment. CSV flattens the extracted fields to one row per field. " +
+          "`sap-c4c` and `sap-s4` turn a purchase-order record into the request body for SAP Sales " +
+          "Cloud (`CustomerOrderCollection`) or SAP S/4HANA (`A_SalesOrder`), wrapped with a " +
+          "readiness report: `ready`, the `blockers` to resolve before posting, `warnings`, and a " +
+          "`mapping` from each SAP field back to the document. Nothing is sent to SAP.",
         parameters: [
           {
             name: "format",
             in: "query",
-            schema: { type: "string", enum: ["json", "xml", "csv"], default: "json" },
+            schema: { type: "string", enum: ["json", "xml", "csv", "sap-c4c", "sap-s4"], default: "json" },
           },
         ],
         responses: {
           200: {
             description: "Standardised export",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Document" } },
+              "application/json": {
+                schema: {
+                  anyOf: [
+                    { $ref: "#/components/schemas/Document" },
+                    { $ref: "#/components/schemas/SapExport" },
+                  ],
+                },
+              },
               "application/xml": { schema: { type: "string" } },
               "text/csv": { schema: { type: "string" } },
             },

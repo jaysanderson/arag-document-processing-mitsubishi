@@ -23,7 +23,7 @@ import type { DocumentRecord } from "../types.ts";
 import type { Agents } from "./agents.ts";
 import { paragraphsFromRetrieval } from "./agents.ts";
 import type { ConfigsService } from "./configs.ts";
-import { type Format, MIME, serialize, serializeMany } from "./formats.ts";
+import { EXTENSION, type Format, MIME, serialize, serializeMany } from "./formats.ts";
 import {
   type KvFilterSpec,
   type KvLeafFilter,
@@ -562,7 +562,11 @@ export class DocumentsService {
   export(id: string, format: Format): { body: string; contentType: string; filename: string } {
     const rec = this.require(id);
     const base = sanitiseFilename(rec.filename).replace(/\.[^.]+$/, "") || "document";
-    return { body: serialize(rec, format), contentType: MIME[format], filename: `${base}.${format}` };
+    return {
+      body: serialize(rec, format),
+      contentType: MIME[format],
+      filename: `${base}.${EXTENSION[format]}`,
+    };
   }
 
   /**
@@ -686,7 +690,7 @@ export class DocumentsService {
     return {
       body: serializeMany(recs, format),
       contentType: MIME[format],
-      filename: `documents-${stamp}.${format}`,
+      filename: `documents-${stamp}.${EXTENSION[format]}`,
       skipped,
     };
   }

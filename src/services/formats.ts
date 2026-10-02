@@ -1,18 +1,33 @@
 /**
- * Format standardization: turn a canonical `DocumentRecord` into JSON, XML, or CSV.
+ * Format standardization: turn a canonical `DocumentRecord` into JSON, XML, or CSV — or into
+ * the request body an SAP sales-order API takes (`services/sap.ts`).
  *
  * Pure functions, no I/O — fully unit-tested. The JSON form is the canonical record
  * itself (pretty-printed); XML and CSV are deterministic projections of it.
  */
 
 import type { DocumentRecord, ExtractedField } from "../types.ts";
+import { type SapTarget, toSapExport } from "./sap.ts";
 
-export type Format = "json" | "xml" | "csv";
+export type Format = "json" | "xml" | "csv" | SapTarget;
+
+export const FORMATS: readonly Format[] = ["json", "xml", "csv", "sap-c4c", "sap-s4"];
 
 export const MIME: Record<Format, string> = {
   json: "application/json; charset=utf-8",
   xml: "application/xml; charset=utf-8",
   csv: "text/csv; charset=utf-8",
+  "sap-c4c": "application/json; charset=utf-8",
+  "sap-s4": "application/json; charset=utf-8",
+};
+
+/** File extension for a download. The SAP hand-offs are JSON, named for their target. */
+export const EXTENSION: Record<Format, string> = {
+  json: "json",
+  xml: "xml",
+  csv: "csv",
+  "sap-c4c": "sap-c4c.json",
+  "sap-s4": "sap-s4.json",
 };
 
 /** Canonical JSON: the record, pretty-printed and stable. */
@@ -191,6 +206,9 @@ export function serialize(rec: DocumentRecord, format: Format): string {
       return toXml(rec);
     case "csv":
       return toCsv(rec);
+    case "sap-c4c":
+    case "sap-s4":
+      return JSON.stringify(toSapExport(rec, format), null, 2);
   }
 }
 
@@ -230,5 +248,13 @@ export function serializeMany(recs: DocumentRecord[], format: Format): string {
       const rows = parts.flatMap((p) => p.split("\n").slice(1)).filter((l) => l.length > 0);
       return [header, ...rows].join("\n");
     }
+    case "sap-c4c":
+    case "sap-s4":
+      // One hand-off per order: SAP takes an order per request, so a batch is a list of them.
+      return JSON.stringify(
+        recs.map((r) => toSapExport(r, format)),
+        null,
+        2,
+      );
   }
 }

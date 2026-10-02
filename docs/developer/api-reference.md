@@ -158,7 +158,7 @@ Auth: ApiKey or Bearer
 
 ### `GET /api/v1/documents/{id}/export`
 
-**Download the record as JSON, XML or CSV** — Serialises the same record `GET /documents/{id}` returns into the requested format and sends it as an attachment. CSV flattens the extracted fields to one row per field.
+**Download the record as JSON, XML or CSV, or as an SAP sales-order request body** — Serialises the same record `GET /documents/{id}` returns into the requested format and sends it as an attachment. CSV flattens the extracted fields to one row per field. `sap-c4c` and `sap-s4` turn a purchase-order record into the request body for SAP Sales Cloud (`CustomerOrderCollection`) or SAP S/4HANA (`A_SalesOrder`), wrapped with a readiness report: `ready`, the `blockers` to resolve before posting, `warnings`, and a `mapping` from each SAP field back to the document. Nothing is sent to SAP.
 
 Parameters:
 
@@ -169,7 +169,7 @@ Parameters:
 
 Responses:
 
-- `200` Standardised export — `application/json` [Document](#document)
+- `200` Standardised export — `application/json` object
 - `400` Validation failed — `application/problem+json` [Problem](#problem)
 - `401` Authentication required — `application/problem+json` [Problem](#problem)
 - `403` Forbidden — `application/problem+json` [Problem](#problem)
@@ -1472,7 +1472,7 @@ Per-id outcome. A bulk delete is best-effort: ids that could not be deleted are 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `ids` | array of string | yes |  |
-| `format` | string (`json`, `xml`, `csv`) |  |  |
+| `format` | string (`json`, `xml`, `csv`, `sap-c4c`, `sap-s4`) |  |  |
 
 ### Stats
 
@@ -1516,6 +1516,22 @@ A bundled sample document the first-run flow can process in one click.
 | `kind` | string (`text`, `image`, `pdf`) |  |  |
 | `expectedDocType` | string (`invoice`, `receipt`, `contract`, `resume`, `purchase_order`, `medical_claim`, `preauthorisation`, `bank_statement`, `form`, `report`, `generic`) |  |  |
 | `featured` | boolean |  | Shown up front on the welcome screen rather than under “Other samples” |
+
+### SapExport
+
+A purchase-order record as an SAP sales-order request body, with what stands between it and being posted. The product builds this; it never calls SAP.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `target` | object | yes |  |
+| `ready` | boolean | yes | True when no blocker stands in the way of posting |
+| `blockers` | array of string | yes |  |
+| `warnings` | array of string | yes |  |
+| `payload` | object | yes | The request body for the target API |
+| `mapping` | array of object | yes |  |
+| `notInPayload` | object | yes | Values read from the order that this payload does not carry |
+| `lines` | array of object | yes |  |
+| `source` | object | yes |  |
 
 ### SampleRequest
 

@@ -243,6 +243,22 @@ test("exports serialise the record as JSON, XML and CSV with a download filename
   assert.match(csv.text, /,exact$/m, "each field row carries its verified quote");
   assert.ok(csv.text.split("\n").length > 2);
 
+  // The SAP hand-offs are formats too: a request body plus what stands between it and SAP.
+  for (const format of ["sap-c4c", "sap-s4"]) {
+    const sap = await c.get(`/api/v1/documents/${id}/export?format=${format}`);
+    assert.equal(sap.status, 200, sap.text);
+    const out = JSON.parse(sap.text) as { target: { id: string }; ready: boolean; blockers: string[] };
+    assert.deepEqual(
+      testing.checkResponse(openapi, "/api/v1/documents/{id}/export", "get", 200, out, "application/json"),
+      [],
+    );
+    assert.match(sap.headers.get("content-disposition") ?? "", new RegExp(`\\.${format}\\.json"$`));
+    assert.equal(out.target.id, format);
+    // An invoice is not an order: the export says so rather than inventing one.
+    assert.equal(out.ready, false);
+    assert.ok(out.blockers.some((b) => /not as a purchase order/.test(b)));
+  }
+
   assert.equal((await c.get(`/api/v1/documents/${id}/export?format=yaml`)).status, 400);
 });
 

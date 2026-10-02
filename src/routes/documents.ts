@@ -10,11 +10,11 @@ import {
 } from "../../vendor/arag-platform/src/index.ts";
 import { openapi } from "../openapi.ts";
 import type { DocumentsService, SortKey } from "../services/documents.ts";
-import type { Format } from "../services/formats.ts";
+import { FORMATS as FORMAT_LIST, type Format } from "../services/formats.ts";
 import { KvValidationError } from "../services/kv.ts";
 import { requireWriter } from "./guards.ts";
 
-const FORMATS = new Set(["json", "xml", "csv"]);
+const FORMATS = new Set<string>(FORMAT_LIST);
 
 export function registerDocumentRoutes(
   app: App,

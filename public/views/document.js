@@ -7,6 +7,8 @@
  * is deterministic arithmetic. Verification outranks confidence everywhere: nothing here
  * gives a confident-but-unverified value a green treatment.
  */
+
+import { highlightJson } from "/ui/arag-ui.js";
 import {
   $,
   $$,
@@ -57,6 +59,17 @@ const TABS = [
  * is the config, where the schema it needs is defined.
  */
 const COMPARE_TAB = ["compare", "Compare"];
+
+/**
+ * The SAP hand-off is offered on purchase orders only: a customer's purchase order is the
+ * one document that becomes a sales order. It sits before JSON because it is the reason an
+ * order desk opened the record, where the raw record is not.
+ */
+const SAP_TAB = ["sap", "SAP order"];
+const withSap = (tabs) => {
+  const at = tabs.findIndex(([slug]) => slug === "json");
+  return [...tabs.slice(0, at), SAP_TAB, ...tabs.slice(at)];
+};
 
 const STAGE_GLOSSARY = [
   [
@@ -143,7 +156,9 @@ export async function renderDocument(main, { params, query, stale }, tab = "") {
           .then((r) => r.agent ?? null)
           .catch(() => null)
       : null;
-  const tabs = generator || tab === "compare" ? [...TABS, COMPARE_TAB] : TABS;
+  const isOrder = doc.docType === "purchase_order" && doc.status === "ready";
+  const base = isOrder || tab === "sap" ? withSap(TABS) : TABS;
+  const tabs = generator || tab === "compare" ? [...base, COMPARE_TAB] : base;
   main.innerHTML = `
     <header class="arag-pagehead">
       <nav class="arag-breadcrumb" aria-label="Breadcrumb">
@@ -177,6 +192,8 @@ export async function renderDocument(main, { params, query, stale }, tab = "") {
       () => [
         { label: "Export JSON", onSelect: () => exportOne(doc, "json") },
         { label: "Export XML", onSelect: () => exportOne(doc, "xml") },
+        { label: "Export for SAP Sales Cloud", hidden: !isOrder, onSelect: () => exportOne(doc, "sap-c4c") },
+        { label: "Export for SAP S/4HANA", hidden: !isOrder, onSelect: () => exportOne(doc, "sap-s4") },
         { label: "Reprocess", onSelect: () => reprocess(doc, null) },
         { label: "Copy document id", onSelect: () => copy(doc.id, "Document id copied") },
         { label: "Copy job id", hidden: !doc.jobId, onSelect: () => copy(doc.jobId, "Job id copied") },
@@ -193,6 +210,7 @@ export async function renderDocument(main, { params, query, stale }, tab = "") {
   else if (tab === "pipeline") await renderPipeline(panel, doc);
   else if (tab === "ask") renderAskTab(panel, doc);
   else if (tab === "json") await renderJson(panel, doc, query);
+  else if (tab === "sap") await renderSap(panel, doc, query);
   else if (tab === "compare") await renderCompare(panel, doc, refresh);
   else renderRecord(panel, doc, query, refresh);
 
@@ -1306,6 +1324,151 @@ function renderJson(panel, doc, query) {
       <span class="mono">GET /api/v1/documents/${esc(doc.id)}</span> returns it.</p>
     <arag-json id="recJson"></arag-json>`;
   $("#recJson", pane).data = doc;
+}
+
+// ── SAP order ────────────────────────────────────────────────────────────────
+
+const SAP_TARGETS = [
+  ["sap-c4c", "SAP Sales Cloud"],
+  ["sap-s4", "SAP S/4HANA"],
+];
+
+/** Friendly names for the values the payload does not carry. */
+const SAP_CARRIED = {
+  orderDate: "Order date",
+  requestedDeliveryDate: "Requested delivery",
+  quoteReference: "Quote reference",
+  jobReference: "Job reference",
+  orderedBy: "Ordered by",
+  shipTo: "Ship to",
+  deliveryInstructions: "Delivery instructions",
+  currency: "Currency",
+  total: "Total",
+};
+
+/**
+ * The record as an SAP sales-order request body — and, first, whether it is fit to post.
+ *
+ * The readiness report leads because that is the decision the screen exists for: an order
+ * with no account number is not an order SAP can take, and saying so here is cheaper than
+ * finding out from a failed post. Every payload field then names the record field it came
+ * from and carries that value's verification, so the trust the record earned travels with it.
+ */
+async function renderSap(panel, doc, query) {
+  const target = SAP_TARGETS.some(([id]) => id === query.target) ? query.target : "sap-c4c";
+  panel.innerHTML = skeletonRows(4);
+  let out;
+  try {
+    out = await api(`/api/v1/documents/${doc.id}/export?format=${target}`);
+  } catch (err) {
+    panel.innerHTML = errorState(err);
+    return;
+  }
+  const labelOf = new Map((doc.fields ?? []).map((f) => [f.key, f.label]));
+  const carried = Object.entries(out.notInPayload ?? {});
+  const lines = out.lines ?? [];
+  const itemKey = target === "sap-c4c" ? "ProductID" : "Material";
+  const qtyKey = target === "sap-c4c" ? "Quantity" : "RequestedQuantity";
+
+  panel.innerHTML = `
+    <div class="dip-scope">
+      <div class="arag-segmented" id="sapTarget" aria-label="SAP system">
+        ${SAP_TARGETS.map(
+          ([id, text]) =>
+            `<button type="button" data-value="${id}" aria-selected="${id === target}">${esc(text)}</button>`,
+        ).join("")}
+      </div>
+      <button class="arag-btn secondary sm" type="button" id="sapDownload">${icon("download")} Download payload</button>
+    </div>
+
+    <div class="arag-alert ${out.ready ? "ok" : "warn"}" id="sapReady" role="status" style="margin-bottom:16px">
+      <strong>${
+        out.ready
+          ? "Ready to post."
+          : `${out.blockers.length} thing${out.blockers.length === 1 ? "" : "s"} to resolve before this can be posted.`
+      }</strong>
+      ${out.ready ? `Every line has a part number and a quantity, and the order names its account.` : ""}
+      ${out.blockers.length ? `<ul>${out.blockers.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
+    </div>
+    ${
+      out.warnings.length
+        ? `<details class="arag-prose" style="margin-bottom:16px" ${out.ready ? "" : "open"}>
+             <summary>${out.warnings.length} thing${out.warnings.length === 1 ? "" : "s"} worth a look</summary>
+             <ul>${out.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
+           </details>`
+        : ""
+    }
+
+    <h2>Order header</h2>
+    <div class="arag-datatable"><div class="scroll">
+      <table class="arag-table" id="sapMapping">
+        <thead><tr><th>SAP field</th><th>Value</th><th>Read from</th><th>Evidence</th></tr></thead>
+        <tbody>${
+          out.mapping.length
+            ? out.mapping
+                .map(
+                  (m) => `<tr>
+                    <td class="mono small">${esc(m.sapField)}</td>
+                    <td>${esc(m.value)}</td>
+                    <td><span class="cell-title">${esc(labelOf.get(m.from) ?? m.from)}</span>
+                        <span class="cell-sub mono">${esc(m.from)}</span></td>
+                    <td>${m.verified ? verifyChip(m.verified) : '<span class="muted small">No quote</span>'}</td>
+                  </tr>`,
+                )
+                .join("")
+            : `<tr><td colspan="4" class="muted">Nothing on this record maps to the order header.</td></tr>`
+        }</tbody>
+      </table></div></div>
+
+    <h2 style="margin-top:20px">Order lines (${lines.length})</h2>
+    <div class="arag-datatable"><div class="scroll">
+      <table class="arag-table" id="sapLines">
+        <thead><tr><th class="num">#</th><th>${itemKey}</th><th class="num">${qtyKey}</th><th>Description</th><th>As written on the order</th></tr></thead>
+        <tbody>${
+          lines.length
+            ? lines
+                .map(
+                  (l) => `<tr>
+                    <td class="num">${l.line}</td>
+                    <td class="mono">${l.productId ? esc(l.productId) : '<span class="arag-chip danger">Missing</span>'}</td>
+                    <td class="num">${l.quantity === null ? '<span class="arag-chip danger">Missing</span>' : esc(String(l.quantity))}</td>
+                    <td class="small">${esc(l.description ?? "—")}</td>
+                    <td class="mono small muted">${esc(l.asWritten)}</td>
+                  </tr>`,
+                )
+                .join("")
+            : `<tr><td colspan="5" class="muted">No order lines were read.</td></tr>`
+        }</tbody>
+      </table></div></div>
+
+    ${
+      carried.length
+        ? `<h2 style="margin-top:20px">Read from the order, not in this payload</h2>
+           <p class="muted small">Where these belong depends on how the SAP tenant is set up — a text,
+             a partner, a pricing element — so they travel beside the payload instead of being dropped.</p>
+           <dl class="arag-kv" id="sapCarried">${carried
+             .map(([k, v]) => `<dt>${esc(SAP_CARRIED[k] ?? k)}</dt><dd>${esc(v)}</dd>`)
+             .join("")}</dl>`
+        : ""
+    }
+
+    <h2 style="margin-top:20px">Request body</h2>
+    <p class="muted arag-prose"><span class="mono">${esc(out.target.method)} ${esc(out.target.path)}</span>
+      on ${esc(out.target.system)}. This product builds the request; it does not send it.</p>
+    <pre class="arag-json" id="sapJson">${highlightJson(out.payload)}</pre>`;
+
+  $("#sapDownload", panel).addEventListener("click", () => exportOne(doc, target));
+  wireSegmented($("#sapTarget", panel), (value) => {
+    if (value === target) return;
+    const { path, query: q } = parseHash();
+    navigate(path, { ...q, target: value === "sap-c4c" ? undefined : value });
+  });
+}
+
+/** The verification chip the record view uses, for a value outside a field row. */
+function verifyChip(verified) {
+  const v = verifyOf({ verified });
+  return `<span class="arag-chip ${v.cls}">${esc(v.text)}</span>`;
 }
 
 const kvValueHtml = (v) =>

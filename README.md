@@ -18,6 +18,10 @@ dependencies, Apache-2.0.
 > (catalogue: `src/services/samples.ts`) and lead the welcome screen. `.env` points at the
 > `mitsubishi-electric-orders` Knowledge Box in `aws-ap-southeast-2-1` and at its
 > `orders-visual-llm-v2` extract strategy, which is what reads the handwritten order.
+> A purchase-order record also opens as an **SAP order**: the request body for SAP Sales Cloud
+> (`CustomerOrderCollection`) or S/4HANA (`A_SalesOrder`), what blocks it from being posted, and
+> where each SAP field came from (`src/services/sap.ts`). The product builds the request; it
+> never calls SAP. `SAP_ORDER_TYPE` and the sales-area variables are in `.env.example`.
 > The sample PDFs are customer documents: keep them out of the public repository.
 
 ```bash
@@ -88,7 +92,7 @@ Everything lives under `/api/v1` and is described by [`src/openapi.ts`](src/open
 | `POST` | `/documents` | Upload (multipart `file`, or raw body + `X-Filename`) → `202 {document, job}` |
 | `GET` | `/documents` | List — search (`q`), filter (`status`, `doc_type`, `config`, `degraded`, `has_issues`, `min_grounding`, `date_from`/`date_to`), sort and page; response includes `facets` |
 | `GET` | `/documents/{id}` | The canonical record |
-| `GET` | `/documents/{id}/export` | `?format=json\|xml\|csv` |
+| `GET` | `/documents/{id}/export` | `?format=json\|xml\|csv`, or `sap-c4c` / `sap-s4` for an SAP sales-order request body with a readiness report |
 | `GET` | `/documents/{id}/text` | The document's own extracted text — what `Evidence.start`/`end` index into |
 | `GET` | `/documents/{id}/source` | The original uploaded file |
 | `POST` | `/documents/{id}/ask` | Grounded Q&A over one document (`citations[]` in the response) |

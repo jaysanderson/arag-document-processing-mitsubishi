@@ -218,27 +218,47 @@ export const SCHEMAS: Record<DocType, ExtractionSchema> = {
   purchase_order: {
     name: "purchase_order_extraction",
     docType: "purchase_order",
-    description: "Structured fields from a purchase order.",
+    description:
+      "Structured fields from a purchase order, captured so the order can be keyed into a sales-order system.",
     properties: {
       po_number: s("Purchase order number"),
-      buyer: s("Buyer / ordering organization"),
+      buyer: s("Buyer / ordering organization — the customer placing the order"),
+      account_number: s("The buyer's account or customer number with the supplier, exactly as printed"),
       supplier: s("Supplier / vendor"),
       order_date: date("Order date in ISO 8601 if determinable"),
+      requested_delivery_date: date(
+        "Date the goods are required or due to be delivered, in ISO 8601 if determinable",
+      ),
+      quote_reference: s("Quotation or quote number the order refers to"),
+      job_reference: s("The buyer's own job, project or site reference number"),
+      ordered_by: s("Person who placed or authorised the order"),
       currency: s("ISO 4217 currency code"),
       total: money("Order total"),
-      line_items: arr("Ordered items, one per entry"),
-      ship_to: s("Ship-to address"),
+      // One string per line, in a fixed order, so an order line can be split into the product
+      // and quantity a sales-order API needs without the record growing a nested shape.
+      line_items: arr(
+        "Ordered items, one per entry, each written as `quantity | part or model number | description | unit price`. " +
+          "Keep all three separators and leave a slot empty when the order does not give that value",
+      ),
+      ship_to: s("Delivery / ship-to address"),
+      delivery_instructions: s("Delivery or site instructions, exactly as written"),
     },
     required: ["po_number", "supplier"],
     labels: {
       po_number: "PO #",
       buyer: "Buyer",
+      account_number: "Account #",
       supplier: "Supplier",
       order_date: "Order Date",
+      requested_delivery_date: "Requested Delivery",
+      quote_reference: "Quote Reference",
+      job_reference: "Job Reference",
+      ordered_by: "Ordered By",
       currency: "Currency",
       total: "Total",
       line_items: "Line Items",
       ship_to: "Ship To",
+      delivery_instructions: "Delivery Instructions",
     },
   },
 

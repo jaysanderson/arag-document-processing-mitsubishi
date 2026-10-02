@@ -45,6 +45,33 @@ test("the guided sample processes a document and lands in the queue", async ({ p
   await expect(page.locator("#strip .arag-statstrip > *").first()).toContainText("Documents");
 });
 
+test("a purchase order opens as an SAP sales-order request, with what blocks it said first", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/#/documents?q=Purchase_Order_No_1706.pdf");
+  await page.click("#docsTable .cell-title >> nth=0");
+  await page.click('a[role="tab"]:has-text("SAP order")');
+  await expect(page).toHaveURL(/#\/documents\/[0-9a-f]+\/sap/);
+  // The mock reads no order lines out of this PDF, and the hand-off says so instead of
+  // presenting an empty order as ready.
+  await expect(page.locator("#sapReady")).toContainText("to resolve before this can be posted");
+  await expect(page.locator("#sapReady")).toContainText("No order lines were read");
+  await expect(page.locator("#sapMapping")).toContainText("BuyerID");
+  await expect(page.locator("#sapJson")).toContainText("CustomerOrderItem");
+  await expect(page.locator("#tabPanel")).toContainText("c4codataapi/CustomerOrderCollection");
+
+  // The same order for the other SAP system: a different entity, different field names.
+  await page.click('#sapTarget button[data-value="sap-s4"]');
+  await expect(page).toHaveURL(/target=sap-s4/);
+  await expect(page.locator("#sapMapping")).toContainText("PurchaseOrderByCustomer");
+  await expect(page.locator("#sapJson")).toContainText("SalesOrderType");
+
+  const download = page.waitForEvent("download");
+  await page.click("#sapDownload");
+  expect((await download).suggestedFilename()).toBe("Purchase_Order_No_1706.sap-s4.json");
+});
+
 test("the other orders sit beside the guided sample, and the generic samples one click away", async ({
   page,
 }) => {

@@ -866,7 +866,17 @@ export class KvService {
       this.mockSchemas.set(id, next);
       return next;
     }
-    const out = await this.json<KvSchema>("PATCH", `/kv-schemas/${encodeURIComponent(id)}`, update, id);
+    const path = `/kv-schemas/${encodeURIComponent(id)}`;
+    let out: KvSchema;
+    try {
+      out = await this.json<KvSchema>("PATCH", path, update, id);
+    } catch (err) {
+      // Some zones route the update as PUT and answer a PATCH to an existing schema with 404
+      // (or 405) — which read as "the schema is gone" and left a changed config unable to
+      // write its new fields. The schema was just fetched, so a 404 here is about the verb.
+      if (!(err instanceof AragError) || (err.status !== 404 && err.status !== 405)) throw err;
+      out = await this.json<KvSchema>("PUT", path, update, id);
+    }
     this.d.log.info("kv.schema.update", { id });
     return out;
   }
